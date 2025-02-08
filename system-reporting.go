@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/load"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/sensors"
@@ -83,17 +82,13 @@ func main() {
 	mwriter := io.MultiWriter(os.Stdout, logFile)
 
 	log.SetOutput(mwriter)
-	log.SetFormatter(log.TextFormatter)
+	log.SetFormatter(log.LogfmtFormatter)
 	log.SetLevel(log.InfoLevel)
 
-	if config.Device != "" {
-		hostname = config.Device
-	} else {
-		hostname, err = host.HostID()
-		log.Info("Using HostID", "id", hostname)
-		if hostname == "" || err != nil {
-			log.Error("Couldn't get proper hostname!", "err", err)
-			hostname="ERROR"
+	if hostname = os.Getenv("DEVICE"); hostname == "" {
+		hostname, err = os.Hostname()
+		if err != nil {
+			log.Fatal("Error getting device hostname", "err", err)
 		}
 	}
 
