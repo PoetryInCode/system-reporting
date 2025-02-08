@@ -8,6 +8,7 @@ fi
 
 ./install.sh
 
+LOG_DIR="/var/log/system-reporting"
 SERVICE_DIR="/etc/sv/system-reporting"
 BINARY="/opt/bin/system-reporting"
 
@@ -33,6 +34,17 @@ mkdir -p "$SERVICE_DIR/env"
 echo "http://192.168.1.83:8086/write?db=metrics" >"$SERVICE_DIR/env/INFLUX_HOST"
 
 chmod 600 $SERVICE_DIR/env/*
+
+echo "Setting up logging for system-reporting..."
+mkdir -p "$SERVICE_DIR/log"
+mkdir -p "$LOG_DIR"
+
+# Create the 'log/run' script
+cat << EOF >"$SERVICE_DIR/log/run"
+#!/bin/sh
+exec svlogd -tt $LOG_DIR
+EOF
+chmod +x "$SERVICE_DIR/log/run"
 
 echo "Finished creating service files!"
 echo ""
