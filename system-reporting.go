@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -57,21 +56,6 @@ func recordMeasurement() string {
 }
 
 func main() {
-	logPath := os.Getenv("LOGFILE")
-	if logPath == "" {
-		logPath = "/var/log/system-reporting.json"
-	}
-
-	logFile, err := os.OpenFile(
-		logPath,
-		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
-		0o644,
-	)
-	if err != nil {
-		log.Fatal("Could't open log file!", "err", err)
-	}
-	defer logFile.Close()
-
 	if ih := os.Getenv("INFLUX_HOST"); ih != "" {
 		config.InfluxHost = ih
 	}
@@ -79,17 +63,14 @@ func main() {
 		log.Fatal("InfluxHost is unset!")
 	}
 
-	mwriter := io.MultiWriter(os.Stdout, logFile)
-
-	log.SetOutput(mwriter)
-	log.SetFormatter(log.LogfmtFormatter)
 	log.SetLevel(log.InfoLevel)
 
 	if hostname = os.Getenv("DEVICE"); hostname == "" {
-		hostname, err = os.Hostname()
+		h, err := os.Hostname()
 		if err != nil {
 			log.Fatal("Error getting device hostname", "err", err)
 		}
+		hostname = h
 	}
 
 
@@ -97,7 +78,7 @@ func main() {
 
 	reqs := make(chan *http.Request)
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
 	go func() { for {
 		select {
 		case <-ctx.Done():
